@@ -1,38 +1,12 @@
-const { Telegraf, session } = require('telegraf');
-const axios = require('axios');
-const express = require('express');
-require('dotenv').config(); // Загружаем переменные окружения из .env
+// pages/api/bot.js
 
-// Проверка значений переменных окружения
-if (!process.env.TELEGRAM_TOKEN) {
-  console.error('Ошибка: TELEGRAM_TOKEN не установлен в переменных окружения.');
-  process.exit(1);
-}
-if (!process.env.MAKE_WEBHOOK_URL) {
-  console.error('Ошибка: MAKE_WEBHOOK_URL не установлен в переменных окружения.');
-  process.exit(1);
-}
-if (!process.env.VERCEL_URL) {
-  console.error('Ошибка: VERCEL_URL не установлен в переменных окружения.');
-  process.exit(1);
-}
+import { Telegraf, session } from 'telegraf';
+import axios from 'axios';
 
-console.log('Проверка переменных окружения:');
-console.log('TELEGRAM_TOKEN:', process.env.TELEGRAM_TOKEN ? '✅' : '❌');
-console.log('MAKE_WEBHOOK_URL:', process.env.MAKE_WEBHOOK_URL ? '✅' : '❌');
-console.log('VERCEL_URL:', process.env.VERCEL_URL ? '✅' : '❌');
-
-// Инициализация бота с токеном из переменных окружения
+// Инициализация бота
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
-const app = express();
 
-// URL вашего Webhook в Make.com
-const makeWebhookUrl = process.env.MAKE_WEBHOOK_URL;
-
-// Middleware для парсинга JSON
-app.use(express.json());
-
-// Встроенный Middleware для сессий
+// Добавление встроенного middleware для сессий
 bot.use(session());
 
 // Обработка команды /start
@@ -97,7 +71,7 @@ bot.on('text', async (ctx) => {
 
       try {
         // Отправка данных на Webhook в Make.com
-        const response = await axios.post(makeWebhookUrl, dataToSend);
+        const response = await axios.post(process.env.MAKE_WEBHOOK_URL, dataToSend);
         console.log('Данные успешно отправлены на Make.com:', response.data);
 
         ctx.reply('Данные успешно отправлены на обработку!')
@@ -133,26 +107,18 @@ bot.on('text', async (ctx) => {
   }
 });
 
-// Настройка Webhook и экспресс-сервера
-const webhookPath = `/bot${process.env.TELEGRAM_TOKEN}`;
-const webhookUrl = `https://${process.env.VERCEL_URL}${webhookPath}`;
-console.log(`Webhook URL: ${webhookUrl}`);
+// Функция для обработки запросов от Telegram
+const handler = async (req, res) => {
+  if (req.method === 'POST') {
+    try {
+      await bot.handleUpdate(req.body, res);
+    } catch (err) {
+      console.error('Ошибка при обработке обновления:', err);
+      res.status(500).send('Internal Server Error');
+    }
+  } else {
+    res.status(200).send('Бот успешно работает через Webhook!');
+  }
+};
 
-// Маршрутизация Webhook
-app.use(webhookPath, bot.webhookCallback(webhookPath));
-
-// Проверка работоспособности сервера
-app.get('/', (req, res) => res.send('Бот успешно работает через Webhook!'));
-
-// Запуск сервера Express и установка Webhook после запуска
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Сервер запущен на порту ${PORT}`);
-
-  // Установка Webhook после запуска сервера
-  bot.telegram.setWebhook(webhookUrl)
-    .then(() => console.log(`Webhook успешно установлен на URL: ${webhookUrl}`))
-    .catch((err) => console.error(`Ошибка при установке Webhook: ${err.message}`));
-});
-
-module.exports = app;
+export default handler;
