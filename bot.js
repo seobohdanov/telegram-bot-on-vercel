@@ -19,6 +19,9 @@ console.log('TELEGRAM_TOKEN:', process.env.TELEGRAM_TOKEN);
 console.log('MAKE_WEBHOOK_URL:', process.env.MAKE_WEBHOOK_URL);
 console.log('VERCEL_URL:', process.env.VERCEL_URL);
 
+// Middleware для парсинга JSON
+app.use(express.json());
+
 // Обработка команды /start
 bot.start((ctx) => {
   const chatId = ctx.chat.id;
@@ -41,7 +44,7 @@ bot.start((ctx) => {
 bot.on('text', async (ctx) => {
   const chatId = ctx.chat.id;
   const message = ctx.message.text;
-  console.log(`Сообщение получено: ${message} от пользователя ${ctx.from.username}`);
+  console.log(`Сообщение получено: "${message}" от пользователя @${ctx.from.username} (ID: ${chatId})`);
 
   const session = userSessions[chatId] || { step: 'event' };
   
@@ -140,9 +143,13 @@ bot.telegram.setWebhook(webhookUrl)
   .then(() => console.log(`Webhook успешно установлен на URL: ${webhookUrl}`))
   .catch((err) => console.error(`Ошибка при установке Webhook: ${err.message}`));
 
-// Запуск сервера Express
+// Маршрутизация Webhook
 app.use(bot.webhookCallback(webhookPath));
+
+// Проверка работоспособности сервера
 app.get('/', (req, res) => res.send('Бот успешно работает через Webhook!'));
+
+// Запуск сервера Express
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));
 
