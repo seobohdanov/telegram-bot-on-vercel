@@ -3,6 +3,25 @@ const axios = require('axios');
 const express = require('express');
 require('dotenv').config(); // Загружаем переменные окружения из .env
 
+// Проверка значений переменных окружения
+if (!process.env.TELEGRAM_TOKEN) {
+  console.error('Ошибка: TELEGRAM_TOKEN не установлен в переменных окружения.');
+  process.exit(1);
+}
+if (!process.env.MAKE_WEBHOOK_URL) {
+  console.error('Ошибка: MAKE_WEBHOOK_URL не установлен в переменных окружения.');
+  process.exit(1);
+}
+if (!process.env.VERCEL_URL) {
+  console.error('Ошибка: VERCEL_URL не установлен в переменных окружения.');
+  process.exit(1);
+}
+
+console.log('Проверка переменных окружения:');
+console.log('TELEGRAM_TOKEN:', process.env.TELEGRAM_TOKEN ? '✅' : '❌');
+console.log('MAKE_WEBHOOK_URL:', process.env.MAKE_WEBHOOK_URL ? '✅' : '❌');
+console.log('VERCEL_URL:', process.env.VERCEL_URL ? '✅' : '❌');
+
 // Инициализация бота с токеном из переменных окружения
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
 const app = express();
@@ -11,13 +30,7 @@ const app = express();
 const makeWebhookUrl = process.env.MAKE_WEBHOOK_URL;
 
 // Хранилище для данных пользователей
-let userSessions = {};
-
-// Проверка значений переменных окружения
-console.log('Проверка переменных окружения:');
-console.log('TELEGRAM_TOKEN:', process.env.TELEGRAM_TOKEN);
-console.log('MAKE_WEBHOOK_URL:', process.env.MAKE_WEBHOOK_URL);
-console.log('VERCEL_URL:', process.env.VERCEL_URL);
+const userSessions = {};
 
 // Middleware для парсинга JSON
 app.use(express.json());
@@ -44,7 +57,8 @@ bot.start((ctx) => {
 bot.on('text', async (ctx) => {
   const chatId = ctx.chat.id;
   const message = ctx.message.text;
-  console.log(`Сообщение получено: "${message}" от пользователя @${ctx.from.username} (ID: ${chatId})`);
+  const username = ctx.from.username || 'неизвестный пользователь';
+  console.log(`Сообщение получено: "${message}" от пользователя @${username} (ID: ${chatId})`);
 
   const session = userSessions[chatId] || { step: 'event' };
   
@@ -87,7 +101,7 @@ bot.on('text', async (ctx) => {
         genre: session.genre,
         user: {
           id: chatId,
-          username: ctx.from.username,
+          username: username,
         },
       };
 
@@ -126,7 +140,7 @@ bot.on('text', async (ctx) => {
       ctx.reply('Пожалуйста, начните сначала с команды /start.')
         .then(() => console.log('Сообщение о начале сеанса отправлено'))
         .catch((err) => console.error('Ошибка при отправке сообщения о начале сеанса:', err));
-      session.step = 'event';
+      userSessions[chatId] = { step: 'event' };
       break;
   }
 
