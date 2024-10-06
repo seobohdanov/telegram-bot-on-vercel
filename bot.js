@@ -16,7 +16,7 @@ bot.start((ctx) => {
   console.log(`Получен запрос /start от пользователя: ${chatId}`);
   if (!userSessions[chatId]) {
     ctx.reply('Привет! Давайте начнем создание песни. Для какого события вы хотите создать песню?');
-    userSessions[chatId] = { step: 'event' };
+    userSessions[ctx.chat.id] = { step: 'event' };
   } else {
     ctx.reply('Вы уже начали создание песни. Продолжайте, ответив на текущий вопрос.');
   }
@@ -51,7 +51,9 @@ bot.on('text', async (ctx) => {
     case 'genre':
       session.genre = message;
       ctx.reply('Спасибо! Я сейчас отправлю данные для создания песни.');
-      const payload = {
+
+      // Формирование объекта для отправки
+      const dataToSend = {
         event: session.event,
         recipient: session.recipient,
         facts: session.facts,
@@ -61,18 +63,30 @@ bot.on('text', async (ctx) => {
           username: ctx.from.username,
         },
       };
-      console.log("Отправка данных на Webhook:", payload);
+      
+      console.log("Отправка данных на Webhook:", dataToSend);
 
-      // Отправка данных на Webhook в Make.com
       try {
-        const response = await axios.post(makeWebhookUrl, payload);
-        console.log(`Ответ Webhook: ${response.status} - ${response.data}`);
-        ctx.reply('Данные успешно отправлены на обработку!');
+        // Отправка данных на Webhook в Make.com
+        const response = await axios.post(makeWebhookUrl, dataToSend);
+
+        // Проверка ответа и вывод в консоль
+        console.log('Ответ Webhook:', response.data);
+        ctx.reply(`Данные успешно отправлены на обработку! Ответ сервера: ${JSON.stringify(response.data)}`);
       } catch (error) {
         console.error('Ошибка при отправке данных на Webhook:', error.response ? error.response.data : error.message);
-        ctx.reply('Произошла ошибка при отправке данных. Пожалуйста, попробуйте снова.');
+        
+        // Подробный лог ошибки
+        if (error.response) {
+          console.log(`Ответ сервера (Ошибка): ${JSON.stringify(error.response.data)}`);
+          ctx.reply(`Произошла ошибка при отправке данных. Пожалуйста, попробуйте снова. Ответ сервера: ${JSON.stringify(error.response.data)}`);
+        } else {
+          console.log(`Ошибка при отправке: ${error.message}`);
+          ctx.reply(`Произошла ошибка при отправке данных. Пожалуйста, попробуйте снова. Ошибка: ${error.message}`);
+        }
       }
 
+      // Завершение сеанса
       delete userSessions[chatId];
       break;
 
@@ -85,20 +99,25 @@ bot.on('text', async (ctx) => {
   userSessions[chatId] = session;
 });
 
+// Настройка Webhook и экспресс-сервера
 const webhookPath = `/bot${process.env.TELEGRAM_TOKEN}`;
 const webhookUrl = `${process.env.VERCEL_URL}${webhookPath}`;
 console.log(`Webhook URL: ${webhookUrl}`);
 
+// Установка Webhook URL в Telegram
 bot.telegram.setWebhook(webhookUrl).then(() => {
   console.log(`Webhook успешно установлен на URL: ${webhookUrl}`);
 });
 
+// Запуск Webhook в Express
 app.use(bot.webhookCallback(webhookPath));
 
+// Простой ответ для проверки
 app.get('/', (req, res) => {
   res.send('Бот успешно работает через Webhook!');
 });
 
+// Запуск локального сервера на Vercel
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
