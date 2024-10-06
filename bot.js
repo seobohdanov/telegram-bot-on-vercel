@@ -1,12 +1,7 @@
-// bot.js
-
 const { Telegraf } = require('telegraf');
 const axios = require('axios');
 const express = require('express');
 require('dotenv').config(); // Загружаем переменные окружения из .env
-
-// Проверка переменной VERCEL_URL
-console.log('VERCEL_URL:', process.env.VERCEL_URL);
 
 // Инициализация бота с токеном из переменных окружения
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
@@ -132,24 +127,35 @@ const webhookPath = `/bot${process.env.TELEGRAM_TOKEN}`;
 const webhookUrl = `https://${process.env.VERCEL_URL}${webhookPath}`;
 console.log(`Webhook URL: ${webhookUrl}`);
 
-// Установка Webhook URL в Telegram
-bot.telegram.setWebhook(webhookUrl)
+// Установка Webhook с проверкой и обработкой ошибок
+bot.telegram.getWebhookInfo()
+  .then((info) => {
+    console.log('Текущий Webhook:', info);
+    if (!info.url || info.url !== webhookUrl) {
+      console.log(`Установка нового Webhook на URL: ${webhookUrl}`);
+      return bot.telegram.setWebhook(webhookUrl);
+    } else {
+      console.log(`Webhook уже установлен на URL: ${info.url}`);
+    }
+  })
   .then(() => console.log(`Webhook успешно установлен на URL: ${webhookUrl}`))
-  .catch((err) => console.error(`Ошибка при установке Webhook: ${err.message}`));
+  .catch((err) => {
+    console.error(`Ошибка при установке Webhook: ${err.message}`);
+    // Если ошибка 429, добавляем задержку перед повторной установкой
+    if (err.response && err.response.status === 429) {
+      const retryAfter = parseInt(err.response.headers['retry-after'], 10) || 1;
+      setTimeout(() => {
+        bot.telegram.setWebhook(webhookUrl)
+          .then(() => console.log(`Webhook успешно установлен на URL: ${webhookUrl} после повторной попытки`))
+          .catch((err) => console.error(`Ошибка при повторной установке Webhook: ${err.message}`));
+      }, retryAfter * 1000);
+    }
+  });
 
-// Запуск Webhook в Express
+// Запуск сервера Express
 app.use(bot.webhookCallback(webhookPath));
-
-// Простой ответ для проверки
-app.get('/', (req, res) => {
-  res.send('Бот успешно работает через Webhook!');
-});
-
-// Запуск локального сервера на Vercel
+app.get('/', (req, res) => res.send('Бот успешно работает через Webhook!'));
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Сервер запущен на порту ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));
 
-// Экспорт приложения для использования на Vercel
 module.exports = app;
