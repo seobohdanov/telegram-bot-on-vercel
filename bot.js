@@ -85,7 +85,7 @@ bot.on('text', async (ctx) => {
 
       // Завершение сеанса и удаление данных пользователя после успешной отправки
       delete userSessions[chatId];
-      break;
+      break; // Корректное использование break внутри case
 
     default:
       ctx.reply('Пожалуйста, начните сначала с команды /start.');
