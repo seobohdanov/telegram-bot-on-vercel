@@ -1,26 +1,24 @@
 {
-  "name": "telegram-bot-on-vercel",
-  "version": "0.1.0",
-  "private": true,
+  "name": "telegram-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot deployed on Vercel",
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "next start"
   },
   "dependencies": {
-    "react": "^18",
-    "react-dom": "^18",
-    "next": "14.2.14"
+    "axios": "^1.5.0",
+    "dotenv": "^16.3.1",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "telegraf": "^4.16.3"
   },
   "devDependencies": {
-    "typescript": "^5",
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.14"
+    "@types/node": "22.7.4",
+    "@types/react": "18.3.11",
+    "typescript": "5.6.2"
   }
 }
