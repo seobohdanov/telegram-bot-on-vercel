@@ -37,13 +37,14 @@ bot.start((ctx) => {
   }
 });
 
-// Обработка каждого шага
+// Обработка текстовых сообщений
 bot.on('text', async (ctx) => {
   const chatId = ctx.chat.id;
   const message = ctx.message.text;
   console.log(`Сообщение получено: ${message} от пользователя ${ctx.from.username}`);
 
   const session = userSessions[chatId] || { step: 'event' };
+  
   switch (session.step) {
     case 'event':
       session.event = message;
@@ -134,30 +135,10 @@ const webhookPath = `/bot${process.env.TELEGRAM_TOKEN}`;
 const webhookUrl = `https://${process.env.VERCEL_URL}${webhookPath}`;
 console.log(`Webhook URL: ${webhookUrl}`);
 
-// Установка Webhook с проверкой и обработкой ошибок
-bot.telegram.getWebhookInfo()
-  .then((info) => {
-    console.log('Текущий Webhook:', info);
-    if (!info.url || info.url !== webhookUrl) {
-      console.log(`Установка нового Webhook на URL: ${webhookUrl}`);
-      return bot.telegram.setWebhook(webhookUrl);
-    } else {
-      console.log(`Webhook уже установлен на URL: ${info.url}`);
-    }
-  })
+// Установка Webhook
+bot.telegram.setWebhook(webhookUrl)
   .then(() => console.log(`Webhook успешно установлен на URL: ${webhookUrl}`))
-  .catch((err) => {
-    console.error(`Ошибка при установке Webhook: ${err.message}`);
-    // Если ошибка 429, добавляем задержку перед повторной установкой
-    if (err.response && err.response.status === 429) {
-      const retryAfter = parseInt(err.response.headers['retry-after'], 10) || 1;
-      setTimeout(() => {
-        bot.telegram.setWebhook(webhookUrl)
-          .then(() => console.log(`Webhook успешно установлен на URL: ${webhookUrl} после повторной попытки`))
-          .catch((err) => console.error(`Ошибка при повторной установке Webhook: ${err.message}`));
-      }, retryAfter * 1000);
-    }
-  });
+  .catch((err) => console.error(`Ошибка при установке Webhook: ${err.message}`));
 
 // Запуск сервера Express
 app.use(bot.webhookCallback(webhookPath));
@@ -166,5 +147,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));
 
 module.exports = app;
-
-исправь код
