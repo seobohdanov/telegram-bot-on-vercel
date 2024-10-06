@@ -13,14 +13,22 @@ const makeWebhookUrl = process.env.MAKE_WEBHOOK_URL;
 // Хранилище для данных пользователей
 let userSessions = {};
 
+// Проверка значений переменных окружения
+console.log('Проверка переменных окружения:');
+console.log('TELEGRAM_TOKEN:', process.env.TELEGRAM_TOKEN);
+console.log('MAKE_WEBHOOK_URL:', process.env.MAKE_WEBHOOK_URL);
+console.log('VERCEL_URL:', process.env.VERCEL_URL);
+
 // Обработка команды /start
 bot.start((ctx) => {
   const chatId = ctx.chat.id;
   console.log(`Получен запрос /start от пользователя: ${chatId}`);
+  
   if (!userSessions[chatId]) {
     ctx.reply('Привет! Давайте начнем создание песни. Для какого события вы хотите создать песню?')
       .then(() => console.log('Приветственное сообщение отправлено'))
       .catch((err) => console.error('Ошибка при отправке приветственного сообщения:', err));
+      
     userSessions[chatId] = { step: 'event' };
   } else {
     ctx.reply('Вы уже начали создание песни. Продолжайте, ответив на текущий вопрос.')
@@ -78,16 +86,15 @@ bot.on('text', async (ctx) => {
           username: ctx.from.username,
         },
       };
-      
-      console.log("Отправка данных на Webhook:", dataToSend);
+
+      console.log("Отправка данных на Webhook Make.com:", dataToSend);
 
       try {
         // Отправка данных на Webhook в Make.com
         const response = await axios.post(makeWebhookUrl, dataToSend);
-
-        // Проверка ответа и вывод в консоль
-        console.log('Ответ Webhook:', response.data);
-        ctx.reply(`Данные успешно отправлены на обработку!`)
+        console.log('Данные успешно отправлены на Make.com:', response.data);
+        
+        ctx.reply('Данные успешно отправлены на обработку!')
           .then(() => console.log('Уведомление об успешной отправке отправлено'))
           .catch((err) => console.error('Ошибка при отправке уведомления об успешной отправке:', err));
       } catch (error) {
@@ -105,10 +112,10 @@ bot.on('text', async (ctx) => {
             .then(() => console.log('Уведомление об ошибке отправлено'))
             .catch((err) => console.error('Ошибка при отправке уведомления об ошибке:', err));
         }
+      } finally {
+        // Завершение сеанса и удаление данных пользователя
+        delete userSessions[chatId];
       }
-
-      // Завершение сеанса и удаление данных пользователя
-      delete userSessions[chatId];
       break;
 
     default:
