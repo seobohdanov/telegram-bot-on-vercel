@@ -15,8 +15,13 @@ let userSessions = {};
 
 // Обработка команды /start
 bot.start((ctx) => {
-  ctx.reply('Привет! Давайте начнем создание песни. Для какого события вы хотите создать песню?');
-  userSessions[ctx.chat.id] = { step: 'event' };
+  const chatId = ctx.chat.id;
+  if (!userSessions[chatId]) {
+    ctx.reply('Привет! Давайте начнем создание песни. Для какого события вы хотите создать песню?');
+    userSessions[chatId] = { step: 'event' };
+  } else {
+    ctx.reply('Вы уже начали создание песни. Продолжайте, ответив на текущий вопрос.');
+  }
 });
 
 // Обработка каждого шага
@@ -45,25 +50,41 @@ bot.on('text', async (ctx) => {
       break;
 
     case 'genre':
-      session.genre = message;
-      ctx.reply('Спасибо! Я сейчас отправлю данные для создания песни.');
+  session.genre = message;
+  ctx.reply('Спасибо! Я сейчас отправлю данные для создания песни.');
 
-      // Отправка данных на Webhook в Make.com
-      try {
-        await axios.post(makeWebhookUrl, {
-          event: session.event,
-          recipient: session.recipient,
-          facts: session.facts,
-          genre: session.genre,
-          user: {
-            id: chatId,
-            username: ctx.from.username,
-          },
-        });
-        ctx.reply('Данные успешно отправлены на обработку!');
-      } catch (error) {
-        console.error('Ошибка при отправке данных на Webhook:', error);
-        ctx.reply('Произошла ошибка при отправке данных. Пожалуйста, попробуйте снова.');
+  // Логирование перед отправкой данных
+  console.log("Отправка данных на Webhook:", {
+    event: session.event,
+    recipient: session.recipient,
+    facts: session.facts,
+    genre: session.genre,
+    user: {
+      id: chatId,
+      username: ctx.from.username,
+    },
+  });
+
+  // Отправка данных на Webhook в Make.com
+  try {
+    await axios.post(makeWebhookUrl, {
+      event: session.event,
+      recipient: session.recipient,
+      facts: session.facts,
+      genre: session.genre,
+      user: {
+        id: chatId,
+        username: ctx.from.username,
+      },
+    });
+    ctx.reply('Данные успешно отправлены на обработку!');
+  } catch (error) {
+    console.error('Ошибка при отправке данных на Webhook:', error.response ? error.response.data : error.message);
+    ctx.reply('Произошла ошибка при отправке данных. Пожалуйста, попробуйте снова.');
+  }
+
+  delete userSessions[chatId];
+  break;
       }
 
       // Завершение сеанса
