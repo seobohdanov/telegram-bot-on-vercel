@@ -1,7 +1,12 @@
+// bot.js
+
 const { Telegraf } = require('telegraf');
 const axios = require('axios');
 const express = require('express');
 require('dotenv').config(); // Загружаем переменные окружения из .env
+
+// Проверка переменной VERCEL_URL
+console.log('VERCEL_URL:', process.env.VERCEL_URL);
 
 // Инициализация бота с токеном из переменных окружения
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
@@ -18,10 +23,14 @@ bot.start((ctx) => {
   const chatId = ctx.chat.id;
   console.log(`Получен запрос /start от пользователя: ${chatId}`);
   if (!userSessions[chatId]) {
-    ctx.reply('Привет! Давайте начнем создание песни. Для какого события вы хотите создать песню?');
+    ctx.reply('Привет! Давайте начнем создание песни. Для какого события вы хотите создать песню?')
+      .then(() => console.log('Приветственное сообщение отправлено'))
+      .catch((err) => console.error('Ошибка при отправке приветственного сообщения:', err));
     userSessions[chatId] = { step: 'event' };
   } else {
-    ctx.reply('Вы уже начали создание песни. Продолжайте, ответив на текущий вопрос.');
+    ctx.reply('Вы уже начали создание песни. Продолжайте, ответив на текущий вопрос.')
+      .then(() => console.log('Напоминание отправлено'))
+      .catch((err) => console.error('Ошибка при отправке напоминания:', err));
   }
 });
 
@@ -36,24 +45,32 @@ bot.on('text', async (ctx) => {
     case 'event':
       session.event = message;
       session.step = 'recipient';
-      ctx.reply('Кому предназначена эта песня?');
+      ctx.reply('Кому предназначена эта песня?')
+        .then(() => console.log('Вопрос о получателе отправлен'))
+        .catch((err) => console.error('Ошибка при отправке сообщения о получателе:', err));
       break;
 
     case 'recipient':
       session.recipient = message;
       session.step = 'facts';
-      ctx.reply('Укажите несколько фактов о человеке или группе.');
+      ctx.reply('Укажите несколько фактов о человеке или группе.')
+        .then(() => console.log('Вопрос о фактах отправлен'))
+        .catch((err) => console.error('Ошибка при отправке сообщения о фактах:', err));
       break;
 
     case 'facts':
       session.facts = message;
       session.step = 'genre';
-      ctx.reply('В каком жанре вы хотите, чтобы песня была сгенерирована?');
+      ctx.reply('В каком жанре вы хотите, чтобы песня была сгенерирована?')
+        .then(() => console.log('Вопрос о жанре отправлен'))
+        .catch((err) => console.error('Ошибка при отправке сообщения о жанре:', err));
       break;
 
     case 'genre':
       session.genre = message;
-      ctx.reply('Спасибо! Я сейчас отправлю данные для создания песни.');
+      ctx.reply('Спасибо! Я сейчас отправлю данные для создания песни.')
+        .then(() => console.log('Подтверждение отправлено'))
+        .catch((err) => console.error('Ошибка при отправке подтверждения:', err));
 
       // Формирование объекта для отправки на Webhook
       const dataToSend = {
@@ -75,17 +92,23 @@ bot.on('text', async (ctx) => {
 
         // Проверка ответа и вывод в консоль
         console.log('Ответ Webhook:', response.data);
-        ctx.reply(`Данные успешно отправлены на обработку! Ответ сервера: ${JSON.stringify(response.data)}`);
+        ctx.reply(`Данные успешно отправлены на обработку!`)
+          .then(() => console.log('Уведомление об успешной отправке отправлено'))
+          .catch((err) => console.error('Ошибка при отправке уведомления об успешной отправке:', err));
       } catch (error) {
         console.error('Ошибка при отправке данных на Webhook:', error.response ? error.response.data : error.message);
         
         // Подробный лог ошибки
         if (error.response) {
           console.log(`Ответ сервера (Ошибка): ${JSON.stringify(error.response.data)}`);
-          ctx.reply(`Произошла ошибка при отправке данных. Пожалуйста, попробуйте снова. Ответ сервера: ${JSON.stringify(error.response.data)}`);
+          ctx.reply(`Произошла ошибка при отправке данных. Пожалуйста, попробуйте снова.`)
+            .then(() => console.log('Уведомление об ошибке отправлено'))
+            .catch((err) => console.error('Ошибка при отправке уведомления об ошибке:', err));
         } else {
           console.log(`Ошибка при отправке: ${error.message}`);
-          ctx.reply(`Произошла ошибка при отправке данных. Пожалуйста, попробуйте снова. Ошибка: ${error.message}`);
+          ctx.reply(`Произошла ошибка при отправке данных. Пожалуйста, попробуйте снова.`)
+            .then(() => console.log('Уведомление об ошибке отправлено'))
+            .catch((err) => console.error('Ошибка при отправке уведомления об ошибке:', err));
         }
       }
 
@@ -94,7 +117,9 @@ bot.on('text', async (ctx) => {
       break;
 
     default:
-      ctx.reply('Пожалуйста, начните сначала с команды /start.');
+      ctx.reply('Пожалуйста, начните сначала с команды /start.')
+        .then(() => console.log('Сообщение о начале сеанса отправлено'))
+        .catch((err) => console.error('Ошибка при отправке сообщения о начале сеанса:', err));
       session.step = 'event';
       break;
   }
