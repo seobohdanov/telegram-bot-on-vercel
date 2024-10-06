@@ -13,7 +13,7 @@ const makeWebhookUrl = process.env.MAKE_WEBHOOK_URL;
 // Хранилище для данных пользователей
 let userSessions = {};
 
-// Обработка команды /start
+   // Обработка команды /start
 bot.start((ctx) => {
   const chatId = ctx.chat.id;
   if (!userSessions[chatId]) {
