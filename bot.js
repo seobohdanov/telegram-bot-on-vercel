@@ -50,41 +50,37 @@ bot.on('text', async (ctx) => {
       break;
 
     case 'genre':
-  session.genre = message;
-  ctx.reply('Спасибо! Я сейчас отправлю данные для создания песни.');
+      session.genre = message;
+      ctx.reply('Спасибо! Я сейчас отправлю данные для создания песни.');
 
-  // Логирование перед отправкой данных
-  console.log("Отправка данных на Webhook:", {
-    event: session.event,
-    recipient: session.recipient,
-    facts: session.facts,
-    genre: session.genre,
-    user: {
-      id: chatId,
-      username: ctx.from.username,
-    },
-  });
+      // Логирование перед отправкой данных
+      console.log("Отправка данных на Webhook:", {
+        event: session.event,
+        recipient: session.recipient,
+        facts: session.facts,
+        genre: session.genre,
+        user: {
+          id: chatId,
+          username: ctx.from.username,
+        },
+      });
 
-  // Отправка данных на Webhook в Make.com
-  try {
-    await axios.post(makeWebhookUrl, {
-      event: session.event,
-      recipient: session.recipient,
-      facts: session.facts,
-      genre: session.genre,
-      user: {
-        id: chatId,
-        username: ctx.from.username,
-      },
-    });
-    ctx.reply('Данные успешно отправлены на обработку!');
-  } catch (error) {
-    console.error('Ошибка при отправке данных на Webhook:', error.response ? error.response.data : error.message);
-    ctx.reply('Произошла ошибка при отправке данных. Пожалуйста, попробуйте снова.');
-  }
-
-  delete userSessions[chatId];
-  break;
+      // Отправка данных на Webhook в Make.com
+      try {
+        await axios.post(makeWebhookUrl, {
+          event: session.event,
+          recipient: session.recipient,
+          facts: session.facts,
+          genre: session.genre,
+          user: {
+            id: chatId,
+            username: ctx.from.username,
+          },
+        });
+        ctx.reply('Данные успешно отправлены на обработку!');
+      } catch (error) {
+        console.error('Ошибка при отправке данных на Webhook:', error.response ? error.response.data : error.message);
+        ctx.reply('Произошла ошибка при отправке данных. Пожалуйста, попробуйте снова.');
       }
 
       // Завершение сеанса
