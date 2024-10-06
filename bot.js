@@ -8,7 +8,7 @@ const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
 const app = express();
 
 // URL вашего Webhook в Make.com
-const makeWebhookUrl = 'https://hook.eu2.make.com/6jg7iy33vtkfeqb1yi4sdpu2tugped3x';
+const makeWebhookUrl = process.env.MAKE_WEBHOOK_URL;
 
 // Хранилище для данных пользователей
 let userSessions = {};
@@ -62,6 +62,7 @@ bot.on('text', async (ctx) => {
         });
         ctx.reply('Данные успешно отправлены на обработку!');
       } catch (error) {
+        console.error('Ошибка при отправке данных на Webhook:', error);
         ctx.reply('Произошла ошибка при отправке данных. Пожалуйста, попробуйте снова.');
       }
 
