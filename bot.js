@@ -7,10 +7,8 @@ require('dotenv').config(); // Загружаем переменные окру�
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
 const app = express();
 
-// URL вашего Webhook в Make.com
 const makeWebhookUrl = process.env.MAKE_WEBHOOK_URL;
 
-// Хранилище для данных пользователей
 let userSessions = {};
 
 // Обработка команды /start
@@ -19,7 +17,7 @@ bot.start((ctx) => {
   console.log(`Получен запрос /start от пользователя: ${chatId}`);
   if (!userSessions[chatId]) {
     ctx.reply('Привет! Давайте начнем создание песни. Для какого события вы хотите создать песню?');
-    userSessions[chatId] = { step: 'event' };
+    userSessions[ctx.chat.id] = { step: 'event' };
   } else {
     ctx.reply('Вы уже начали создание песни. Продолжайте, ответив на текущий вопрос.');
   }
@@ -66,7 +64,8 @@ bot.on('text', async (ctx) => {
       });
 
       try {
-        await axios.post(makeWebhookUrl, {
+        // Отправка данных на Webhook в Make.com
+        const response = await axios.post(makeWebhookUrl, {
           event: session.event,
           recipient: session.recipient,
           facts: session.facts,
@@ -76,10 +75,13 @@ bot.on('text', async (ctx) => {
             username: ctx.from.username,
           },
         });
-        ctx.reply('Данные успешно отправлены на обработку!');
+
+        // Проверка ответа и вывод в консоль
+        console.log('Ответ Webhook:', response.data);
+        ctx.reply(`Данные успешно отправлены на обработку! Ответ сервера: ${JSON.stringify(response.data)}`);
       } catch (error) {
         console.error('Ошибка при отправке данных на Webhook:', error.response ? error.response.data : error.message);
-        ctx.reply('Произошла ошибка при отправке данных. Пожалуйста, попробуйте снова.');
+        ctx.reply(`Произошла ошибка при отправке данных. Пожалуйста, попробуйте снова. Ошибка: ${error.message}`);
       }
 
       // Завершение сеанса
@@ -100,7 +102,7 @@ const webhookPath = `/bot${process.env.TELEGRAM_TOKEN}`;
 const webhookUrl = `https://telegram-bot-on-vercel.vercel.app${webhookPath}`;
 console.log(`Webhook URL: ${webhookUrl}`);
 
-// Установка Webhook URL в Telegram напрямую
+// Установка Webhook URL в Telegram
 bot.telegram.setWebhook(webhookUrl).then(() => {
   console.log(`Webhook успешно установлен на URL: ${webhookUrl}`);
 });
