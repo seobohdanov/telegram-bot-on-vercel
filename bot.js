@@ -3,11 +3,9 @@ const axios = require('axios');
 const express = require('express');
 require('dotenv').config(); // Загружаем переменные окружения из .env
 
-// Инициализация бота с токеном
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
 const app = express();
 
-// URL вашего Webhook в Make.com
 const makeWebhookUrl = process.env.MAKE_WEBHOOK_URL;
 
 // Хранилище для данных пользователей
@@ -54,28 +52,22 @@ bot.on('text', async (ctx) => {
     case 'genre':
       session.genre = message;
       ctx.reply('Спасибо! Я сейчас отправлю данные для создания песни.');
+
       console.log("Отправка данных на Webhook:", {
         event: session.event,
         recipient: session.recipient,
         facts: session.facts,
         genre: session.genre,
-        user: {
-          id: chatId,
-          username: ctx.from.username,
-        },
+        user: { id: chatId, username: ctx.from.username },
       });
 
-      // Отправка данных на Webhook в Make.com
       try {
         await axios.post(makeWebhookUrl, {
           event: session.event,
           recipient: session.recipient,
           facts: session.facts,
           genre: session.genre,
-          user: {
-            id: chatId,
-            username: ctx.from.username,
-          },
+          user: { id: chatId, username: ctx.from.username },
         });
         ctx.reply('Данные успешно отправлены на обработку!');
       } catch (error) {
@@ -83,7 +75,6 @@ bot.on('text', async (ctx) => {
         ctx.reply('Произошла ошибка при отправке данных. Пожалуйста, попробуйте снова.');
       }
 
-      // Завершение сеанса
       delete userSessions[chatId];
       break;
 
@@ -96,29 +87,20 @@ bot.on('text', async (ctx) => {
   userSessions[chatId] = session;
 });
 
-// Настройка Webhook и экспресс-сервера
 const webhookPath = `/bot${process.env.TELEGRAM_TOKEN}`;
-const webhookUrl = `${process.env.VERCEL_URL}${webhookPath}`;
+const webhookUrl = process.env.VERCEL_URL ? `${process.env.VERCEL_URL}${webhookPath}` : `https://telegram-bot-on-vercel.vercel.app${webhookPath}`;
 console.log(`Установка Webhook на URL: ${webhookUrl}`);
 
-// Установка Webhook URL в Telegram
 bot.telegram.setWebhook(webhookUrl).then(() => {
   console.log(`Webhook успешно установлен на URL: ${webhookUrl}`);
+}).catch((err) => {
+  console.error('Ошибка при установке Webhook:', err);
 });
 
-// Запуск Webhook в Express
 app.use(bot.webhookCallback(webhookPath));
+app.get('/', (req, res) => res.send('Бот успешно работает через Webhook!'));
 
-// Простой ответ для проверки
-app.get('/', (req, res) => {
-  res.send('Бот успешно работает через Webhook!');
-});
-
-// Запуск локального сервера на Vercel
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Сервер запущен на порту ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Сервер запущен на порту ${PORT}`));
 
-// Экспорт приложения для использования на Vercel
 module.exports = app;
