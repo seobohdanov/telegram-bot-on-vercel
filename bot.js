@@ -13,7 +13,7 @@ const makeWebhookUrl = process.env.MAKE_WEBHOOK_URL;
 // Хранилище для данных пользователей
 let userSessions = {};
 
-   // Обработка команды /start
+// Обработка команды /start
 bot.start((ctx) => {
   const chatId = ctx.chat.id;
   if (!userSessions[chatId]) {
@@ -83,7 +83,7 @@ bot.on('text', async (ctx) => {
         ctx.reply('Произошла ошибка при отправке данных. Пожалуйста, попробуйте снова.');
       }
 
-      // Завершение сеанса
+      // Завершение сеанса и удаление данных пользователя после успешной отправки
       delete userSessions[chatId];
       break;
 
