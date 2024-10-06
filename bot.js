@@ -3,11 +3,14 @@ const axios = require('axios');
 const express = require('express');
 require('dotenv').config(); // Загружаем переменные окружения из .env
 
+// Инициализация бота с токеном из переменных окружения
 const bot = new Telegraf(process.env.TELEGRAM_TOKEN);
 const app = express();
 
+// URL вашего Webhook в Make.com
 const makeWebhookUrl = process.env.MAKE_WEBHOOK_URL;
 
+// Хранилище для данных пользователей
 let userSessions = {};
 
 // Обработка команды /start
@@ -16,7 +19,7 @@ bot.start((ctx) => {
   console.log(`Получен запрос /start от пользователя: ${chatId}`);
   if (!userSessions[chatId]) {
     ctx.reply('Привет! Давайте начнем создание песни. Для какого события вы хотите создать песню?');
-    userSessions[ctx.chat.id] = { step: 'event' };
+    userSessions[chatId] = { step: 'event' };
   } else {
     ctx.reply('Вы уже начали создание песни. Продолжайте, ответив на текущий вопрос.');
   }
@@ -52,7 +55,7 @@ bot.on('text', async (ctx) => {
       session.genre = message;
       ctx.reply('Спасибо! Я сейчас отправлю данные для создания песни.');
 
-      // Формирование объекта для отправки
+      // Формирование объекта для отправки на Webhook
       const dataToSend = {
         event: session.event,
         recipient: session.recipient,
@@ -86,7 +89,7 @@ bot.on('text', async (ctx) => {
         }
       }
 
-      // Завершение сеанса
+      // Завершение сеанса и удаление данных пользователя
       delete userSessions[chatId];
       break;
 
@@ -101,13 +104,13 @@ bot.on('text', async (ctx) => {
 
 // Настройка Webhook и экспресс-сервера
 const webhookPath = `/bot${process.env.TELEGRAM_TOKEN}`;
-const webhookUrl = `${process.env.VERCEL_URL}${webhookPath}`;
+const webhookUrl = `https://${process.env.VERCEL_URL}${webhookPath}`;
 console.log(`Webhook URL: ${webhookUrl}`);
 
 // Установка Webhook URL в Telegram
-bot.telegram.setWebhook(webhookUrl).then(() => {
-  console.log(`Webhook успешно установлен на URL: ${webhookUrl}`);
-});
+bot.telegram.setWebhook(webhookUrl)
+  .then(() => console.log(`Webhook успешно установлен на URL: ${webhookUrl}`))
+  .catch((err) => console.error(`Ошибка при установке Webhook: ${err.message}`));
 
 // Запуск Webhook в Express
 app.use(bot.webhookCallback(webhookPath));
@@ -123,4 +126,5 @@ app.listen(PORT, () => {
   console.log(`Сервер запущен на порту ${PORT}`);
 });
 
+// Экспорт приложения для использования на Vercel
 module.exports = app;
