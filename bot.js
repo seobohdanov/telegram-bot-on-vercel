@@ -16,6 +16,7 @@ let userSessions = {};
 // Обработка команды /start
 bot.start((ctx) => {
   const chatId = ctx.chat.id;
+  console.log(`Получен запрос /start от пользователя: ${chatId}`);
   if (!userSessions[chatId]) {
     ctx.reply('Привет! Давайте начнем создание песни. Для какого события вы хотите создать песню?');
     userSessions[chatId] = { step: 'event' };
@@ -29,6 +30,7 @@ bot.on('text', async (ctx) => {
   const chatId = ctx.chat.id;
   const message = ctx.message.text;
   const session = userSessions[chatId] || { step: 'event' };
+  console.log(`Получено сообщение: ${message}, Текущий шаг: ${session.step}`);
 
   switch (session.step) {
     case 'event':
@@ -52,8 +54,6 @@ bot.on('text', async (ctx) => {
     case 'genre':
       session.genre = message;
       ctx.reply('Спасибо! Я сейчас отправлю данные для создания песни.');
-
-      // Логирование перед отправкой данных
       console.log("Отправка данных на Webhook:", {
         event: session.event,
         recipient: session.recipient,
@@ -83,7 +83,7 @@ bot.on('text', async (ctx) => {
         ctx.reply('Произошла ошибка при отправке данных. Пожалуйста, попробуйте снова.');
       }
 
-       // Завершение сеанса и удаление данных пользователя после успешной отправки
+      // Завершение сеанса
       delete userSessions[chatId];
       break;
 
@@ -99,10 +99,11 @@ bot.on('text', async (ctx) => {
 // Настройка Webhook и экспресс-сервера
 const webhookPath = `/bot${process.env.TELEGRAM_TOKEN}`;
 const webhookUrl = `${process.env.VERCEL_URL}${webhookPath}`;
+console.log(`Установка Webhook на URL: ${webhookUrl}`);
 
 // Установка Webhook URL в Telegram
 bot.telegram.setWebhook(webhookUrl).then(() => {
-  console.log(`Webhook установлен на URL: ${webhookUrl}`);
+  console.log(`Webhook успешно установлен на URL: ${webhookUrl}`);
 });
 
 // Запуск Webhook в Express
