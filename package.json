@@ -11,14 +11,9 @@
   "dependencies": {
     "axios": "^1.5.0",
     "dotenv": "^16.3.1",
+    "telegraf": "^4.16.3",
     "next": "latest",
     "react": "latest",
-    "react-dom": "latest",
-    "telegraf": "^4.16.3"
-  },
-  "devDependencies": {
-    "@types/node": "22.7.4",
-    "@types/react": "18.3.11",
-    "typescript": "5.6.2"
+    "react-dom": "latest"
   }
 }
